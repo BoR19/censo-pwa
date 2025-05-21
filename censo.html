@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Censo - Grupo Familiar</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com "></script>
+  <style>
+    /* Personalización opcional de Tailwind */
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#1D4ED8',   /* Azul profundo */
+            secondary: '#10B981', /* Verde brillante */
+            lightbg: '#F9FAFB',
+          }
+        }
+      }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js "></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js "></script>
+  <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192x192.png" type="image/png">             
+</head>
+<body class="bg-lightbg min-h-screen p-4 md:p-6">
+
+  <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
+
+    <h2 class="text-2xl font-bold text-primary mb-6">🧑‍💼 Datos del Jefe de Familia</h2>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Nombre(s)</label>
+        <input type="text" id="nombre_jefe" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Apellido(s)</label>
+        <input type="text" id="apellido_jefe" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Número de Documento</label>
+        <input type="text" id="documento_jefe" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Teléfono Celular</label>
+        <input type="tel" id="celular_jefe" placeholder="Ej. 3001234567" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
+      </div>
+    </div>
+
+    <h2 class="text-2xl font-bold text-primary mt-8 mb-4">👨‍👩‍👧‍👦 Miembros del Grupo Familiar</h2>
+
+    <table id="tablaMiembros" class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre y Apellido</th>
+          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de Nacimiento</th>
+          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edad</th>
+          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parentesco</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpoTabla" class="bg-white divide-y divide-gray-200">
+        <tr>
+          <td><input type="text" class="nombre mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary"></td>
+          <td><input type="date" class="fecha mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary" onchange="calcularEdad(this)"></td>
+          <td><input type="number" class="edad mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" readonly></td>
+          <td>
+            <select class="parentesco mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
+              <option value="">Seleccione...</option>
+              <option value="Padre/Madre">Padre/Madre</option>
+              <option value="Esposo/a">Esposo/a</option>
+              <option value="Hijo/a">Hijo/a</option>
+              <option value="Hermano/a">Hermano/a</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <button onclick="agregarFila()" class="mt-4 flex items-center gap-2 px-4 py-2 bg-primary text-white rounded hover:bg-blue-800 transition">
+      ➕ Agregar Miembro
+    </button>
+
+    <br><br>
+    <button onclick="guardarDatos()" class="w-full px-4 py-3 bg-secondary text-white font-semibold rounded hover:bg-green-600 transition">
+      💾 Guardar Datos
+    </button>
+    <button onclick="generarPDF()" class="mt-4 w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition">
+        📄 Generar PDF
+      </button>
+
+  </div>
+
+  <script>
+    function calcularEdad(input) {
+      const fila = input.closest("tr");
+      const fechaInput = input.value;
+      const edadInput = fila.querySelector(".edad");
+
+      if (fechaInput) {
+        const nacimiento = new Date(fechaInput);
+        const hoy = new Date();
+        let edad = hoy.getFullYear() - nacimiento.getFullYear();
+        const mes = hoy.getMonth() - nacimiento.getMonth();
+
+        if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+          edad--;
+        }
+
+        edadInput.value = edad >= 0 ? edad : 0;
+      } else {
+        edadInput.value = "";
+      }
+    }
+
+    function agregarFila() {
+      const tabla = document.getElementById("cuerpoTabla");
+      const nuevaFila = tabla.insertRow();
+
+      nuevaFila.innerHTML = `
+        <td><input type="text" class="nombre mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary"></td>
+        <td><input type="date" class="fecha mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary" onchange="calcularEdad(this)"></td>
+        <td><input type="number" class="edad mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" readonly></td>
+        <td>
+          <select class="parentesco mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
+            <option value="">Seleccione...</option>
+            <option value="Padre/Madre">Padre/Madre</option>
+            <option value="Esposo/a">Esposo/a</option>
+            <option value="Hijo/a">Hijo/a</option>
+            <option value="Hermano/a">Hermano/a</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </td>
+      `;
+    }
+
+    function guardarDatos() {
+      const jefe = {
+        nombre: document.getElementById("nombre_jefe").value,
+        apellido: document.getElementById("apellido_jefe").value,
+        documento: document.getElementById("documento_jefe").value,
+        celular: document.getElementById("celular_jefe").value
+      };
+
+      const miembros = [];
+      const filas = document.querySelectorAll("#cuerpoTabla tr");
+
+      filas.forEach((fila, index) => {
+        const nombre = fila.querySelector(".nombre").value;
+        const fecha = fila.querySelector(".fecha").value;
+        const edad = fila.querySelector(".edad").value;
+        const parentesco = fila.querySelector(".parentesco").value;
+
+        if (nombre || fecha || edad || parentesco) {
+          miembros.push({ nombre, fecha, edad, parentesco });
+        }
+      });
+
+      console.log("Jefe de Familia:", jefe);
+      console.log("Miembros del Grupo Familiar:", miembros);
+
+      alert("Datos guardados en consola. Revisa la pestaña 'Consola' del navegador.");
+    }
+  </script>
+  <script>
+    async function generarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+  
+      // Crear un contenedor temporal con los datos para mostrar en PDF
+      const preview = document.createElement('div');
+      preview.style.padding = '20px';
+      preview.style.background = 'white';
+      preview.style.fontFamily = 'Arial';
+      preview.style.maxWidth = '800px';
+      preview.style.margin = 'auto';
+  
+      const jefe = {
+        nombre: document.getElementById("nombre_jefe").value,
+        apellido: document.getElementById("apellido_jefe").value,
+        documento: document.getElementById("documento_jefe").value,
+        celular: document.getElementById("celular_jefe").value
+      };
+  
+      const miembros = [];
+      const filas = document.querySelectorAll("#cuerpoTabla tr");
+  
+      filas.forEach((fila) => {
+        const nombre = fila.querySelector(".nombre").value;
+        const fecha = fila.querySelector(".fecha").value;
+        const edad = fila.querySelector(".edad").value;
+        const parentesco = fila.querySelector(".parentesco").value;
+  
+        if (nombre || fecha || edad || parentesco) {
+          miembros.push({ nombre, fecha, edad, parentesco });
+        }
+      });
+  
+      // Contenido del PDF
+      preview.innerHTML = `
+        <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 10px;">Datos del Jefe de Familia</h2>
+        <p><strong>Nombre:</strong> ${jefe.nombre} ${jefe.apellido}</p>
+        <p><strong>Documento:</strong> ${jefe.documento}</p>
+        <p><strong>Celular:</strong> ${jefe.celular}</p>
+  
+        <h2 style="margin-top: 20px; font-size: 20px; font-weight: bold;">Miembros del Grupo Familiar</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Nombre</th>
+              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Fecha de Nacimiento</th>
+              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Edad</th>
+              <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">Parentesco</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${miembros.map(m => `
+              <tr>
+                <td style="border: 1px solid #ccc; padding: 6px;">${m.nombre}</td>
+                <td style="border: 1px solid #ccc; padding: 6px;">${m.fecha}</td>
+                <td style="border: 1px solid #ccc; padding: 6px;">${m.edad}</td>
+                <td style="border: 1px solid #ccc; padding: 6px;">${m.parentesco}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+  
+      document.body.appendChild(preview);
+  
+      // Capturar el div como imagen y agregar al PDF
+      const canvas = await html2canvas(preview, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+  
+      const pdfWidth = doc.internal.pageSize.getWidth();
+      const imgProps = doc.getImageProperties(imgData);
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+  
+      doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+  
+      document.body.removeChild(preview);
+  
+      // Guardar el PDF
+      doc.save("censo_grupo_familiar.pdf");
+    }
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(registration => console.log('SW registrado:', registration.scope))
+          .catch(error => console.log('Error al registrar SW:', error));
+      });
+    }
+  </script>
+
+</body>
+</html>
